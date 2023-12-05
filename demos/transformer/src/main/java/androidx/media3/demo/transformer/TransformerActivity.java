@@ -73,6 +73,7 @@ import androidx.media3.effect.RgbFilter;
 import androidx.media3.effect.RgbMatrix;
 import androidx.media3.effect.ScaleAndRotateTransformation;
 import androidx.media3.effect.SingleColorLut;
+import androidx.media3.effect.SpeedChangeEffect;
 import androidx.media3.effect.TextOverlay;
 import androidx.media3.effect.TextureOverlay;
 import androidx.media3.exoplayer.ExoPlayer;
@@ -362,14 +363,26 @@ public final class TransformerActivity extends AppCompatActivity {
       ImmutableList<AudioProcessor> audioProcessors = createAudioProcessorsFromBundle(bundle);
       ImmutableList<Effect> videoEffects = createVideoEffectsFromBundle(bundle);
       editedMediaItemBuilder
-          .setRemoveAudio(bundle.getBoolean(ConfigurationActivity.SHOULD_REMOVE_AUDIO))
-          .setRemoveVideo(bundle.getBoolean(ConfigurationActivity.SHOULD_REMOVE_VIDEO))
+          .setRemoveAudio(true)
+          .setRemoveVideo(false)
           .setFlattenForSlowMotion(
               bundle.getBoolean(ConfigurationActivity.SHOULD_FLATTEN_FOR_SLOW_MOTION))
           .setEffects(new Effects(audioProcessors, videoEffects));
     }
-    Composition.Builder compositionBuilder =
-        new Composition.Builder(new EditedMediaItemSequence(editedMediaItemBuilder.build()));
+    EditedMediaItem editedMediaItem = editedMediaItemBuilder.build();
+    EditedMediaItemSequence sequence = new EditedMediaItemSequence(
+        editedMediaItemBuilder
+            .setEffects(new Effects(
+                editedMediaItem.effects.audioProcessors,
+                ImmutableList.<Effect>builder()
+                    .addAll(editedMediaItem.effects.videoEffects)
+                    .add(new SpeedChangeEffect(6f))
+                    .build()
+            ))
+            .build(),
+        editedMediaItem
+    );
+    Composition.Builder compositionBuilder = new Composition.Builder(sequence);
     if (bundle != null) {
       compositionBuilder
           .setHdrMode(bundle.getInt(ConfigurationActivity.HDR_MODE))
